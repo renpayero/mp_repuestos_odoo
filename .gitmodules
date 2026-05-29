@@ -1,0 +1,20 @@
+[submodule "addons/external/odoo-argentina-ce"]
+	path = addons/external/odoo-argentina-ce
+	url = https://github.com/ingadhoc/odoo-argentina-ce
+	branch = 19.0
+[submodule "addons/external/odoo-argentina"]
+	path = addons/external/odoo-argentina
+	url = https://github.com/ingadhoc/odoo-argentina
+	branch = 19.0
+[submodule "addons/external/account-payment"]
+	path = addons/external/account-payment
+	url = https://github.com/ingadhoc/account-payment
+	branch = 19.0
+[submodule "addons/external/account-financial-tools"]
+	path = addons/external/account-financial-tools
+	url = https://github.com/ingadhoc/account-financial-tools
+	branch = 19.0
+[submodule "addons/external/reporting-engine"]
+	path = addons/external/reporting-engine
+	url = https://github.com/OCA/reporting-engine
+	branch = 19.0

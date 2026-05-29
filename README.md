@@ -21,8 +21,8 @@
 
 | Fase | Descripción | Estado |
 |---|---|---|
-| 0 | Resguardo del origen | ⬜ Pendiente |
-| 1 | VPS + Infraestructura Docker | ⬜ Pendiente |
+| 0 | Resguardo del origen | ✅ Completo |
+| 1 | VPS + Infraestructura Docker | ✅ Completo |
 | 2 | Baseline Community (módulos + config RI) | ⬜ Pendiente |
 | 3 | Datos maestros (productos + contactos) | ⬜ Pendiente |
 | 4 | FE + PoS en homologación | ⬜ Pendiente |
@@ -86,54 +86,59 @@ mp_repuestos_odoo/
 
 ---
 
-## Fase 1 — VPS + Infraestructura Docker `→ Plan §8`
+## Fase 1 — VPS + Infraestructura Docker `→ Plan §8` ✅
 
 > **Todo en Docker es mandatorio.** El Dockerfile a medida es la pieza clave (resuelve M2Crypto + pyafipws dentro de la imagen).
+> **Ejecutado el 2026-05-29 directamente sobre el VPS productivo.** Stack `mprepuestos` (proyecto Compose) levantado y validado. Archivos en `docker/`, `addons/`, `scripts/`.
 
 ### 1.1 VPS base (Hostinger)
-- [ ] Provisionar VPS. Sizing de arranque: **2 vCPU / 4 GB / 40–60 GB SSD** (holgura: 4 vCPU / 8 GB).
-- [ ] Instalar **Docker + Docker Compose**.
-- [ ] Hardening básico: usuario no-root, SSH por clave, firewall (solo 80/443/SSH), `fail2ban`.
-- [ ] DNS: apuntar el dominio/subdominio del cliente al **VPS donde corre el NPM existente** (es quien termina el SSL).
-- [ ] Identificar y documentar el **nombre de la red Docker del NPM existente** (`docker network ls`) — es la red a la que se conectará el contenedor `odoo`.
+- [x] VPS operativo (ejecutamos sobre el server productivo). Docker **28.4.0** + Compose **v2.39.4**.
+- [x] Identificada la red del NPM existente: **`nginx_default`** (NPM = contenedor `nginx-app-1`).
+- [ ] Hardening básico: usuario no-root, SSH por clave, firewall, `fail2ban`. *(gestión del server, fuera de esta fase)*
+- [ ] DNS: apuntar el dominio/subdominio del cliente al VPS. *(pendiente: definir `DOMAIN` en `.env` y DNS)*
 
 ### 1.2 Imagen Odoo a medida (`docker/Dockerfile`)
-- [ ] Base `FROM odoo:19`.
-- [ ] Instalar **dependencias de sistema** ANTES del pip: `swig libssl-dev python3-dev build-essential pkg-config`. `→ Plan §7.3`
-- [ ] Instalar **dependencias Python** (`requirements.txt`): `pyOpenSSL`, `M2Crypto`, `httplib2>=0.7`, `pysimplesoap~=1.8.22`, `git+https://github.com/filoquin/pyafipws.git@py3k`, `xlrd`. `→ Plan §7.2`
-- [ ] Incorporar los repos de addons al `addons_path` (copiados en build o montados como volumen).
-- [ ] Verificar que **`wkhtmltopdf`** (versión parcheada) está presente en la imagen final. `→ Plan §8`
-- [ ] Build exitoso de la imagen y `M2Crypto`/`pyafipws` importables (`python -c "import M2Crypto, pyafipws"` dentro del contenedor).
+- [x] Base `FROM odoo:19` (Ubuntu noble, Python 3.12).
+- [x] **Dependencias de sistema** ANTES del pip: `swig libssl-dev python3-dev build-essential pkg-config` (+ `git`, `postgresql-client`, `gettext-base`). `→ Plan §7.3`
+- [x] **Dependencias Python** (`docker/requirements.txt`): `pyOpenSSL`, `M2Crypto`, `httplib2>=0.7`, `pysimplesoap~=1.8.22`, `git+…/filoquin/pyafipws@py3k`, `xlrd`, `xlsxwriter`. `→ Plan §7.2`
+- [x] Repos de addons en `addons_path` (montados como volumen `../addons:/mnt/extra-addons:ro`).
+- [x] **`wkhtmltopdf 0.12.6.1 (with patched qt)`** presente en la imagen. `→ Plan §8`
+- [x] Build OK; `import M2Crypto, pyafipws` (+ `OpenSSL`, `pysimplesoap`, `httplib2`) verificado en runtime.
 
 ### 1.3 Stack de contenedores (`docker/docker-compose.yml`)
-> **Sin proxy propio.** En este servidor **ya corre un NGINX Proxy Manager** (el mismo del setup de Banwood). El SSL sale de ahí. El compose de MPRepuestos **NO** levanta su propio NPM: los contenedores se conectan a la **red Docker existente del NPM** para que pueda enrutar y emitir el certificado Let's Encrypt.
+> **Sin proxy propio.** En este VPS ya corre un NGINX Proxy Manager (`nginx-app-1`). El SSL sale de ahí. El compose **NO** levanta un NPM: el contenedor `odoo` se conecta a la red existente **`nginx_default`** y el NPM lo rutea por nombre.
 
-- [ ] Servicio **`db`**: PostgreSQL 16 con **volumen persistente**.
-- [ ] Servicio **`odoo`**: imagen propia, volúmenes para **filestore** y **`odoo.conf`**, `depends_on: db`.
-- [ ] **Red compartida con el NPM existente:** declarar la red del NPM como `external: true` en el compose y conectar el servicio `odoo` a ella (además de una red interna privada `db`↔`odoo`).
-- [ ] **NO publicar el puerto 8069 al host** (`ports:`); exponerlo solo **dentro de la red del proxy** (`expose: 8069`). El NPM llega a `odoo:8069` por nombre de servicio dentro de la red compartida.
-- [ ] **NO levantar un segundo NPM** ni ocupar 80/443 (ya los tiene el proxy existente).
-- [ ] En el **NPM existente**: crear un *Proxy Host* → `odoo` (puerto 8069) con **SSL Let's Encrypt** para el dominio del cliente.
-- [ ] Añadir un segundo destino/location en el NPM para **websocket / longpolling** (puerto **8072** gevent), necesario para PoS y chatter. Habilitar *Websockets Support* en el Proxy Host.
-- [ ] Confirmar `proxy_mode = True` en `odoo.conf` (coherente con estar detrás del NPM). `→ 1.4`
-- [ ] `.env` con secretos fuera de git (`.env.example` versionado, `.env` en `.gitignore`); incluir el **nombre de la red externa del NPM** como variable.
+- [x] Servicio **`db`**: PostgreSQL 16, volumen persistente `pgdata`, healthcheck `pg_isready`.
+- [x] Servicio **`odoo`**: imagen propia, volúmenes filestore + conf (template) + addons, `depends_on: db (service_healthy)`.
+- [x] **Red compartida**: `proxy` declarada `external: true`, `name: ${NPM_NETWORK}` (=`nginx_default`) + red interna privada `internal` (`db`↔`odoo`). `odoo` quedó en `nginx_default` (172.22.0.8) y el NPM lo resuelve por nombre `mprepuestos_odoo`.
+- [x] **Sin `ports:`** — solo `expose: 8069, 8072`. No se publica nada al host.
+- [x] No se levantó segundo NPM. `renzo_odoo` (instancia previa) intacta.
+- [x] `.env` con secretos fuera de git (`.env.example` versionado, `.env` en `.gitignore`, verificado con `git check-ignore`).
+- [ ] **En el NPM** (`nginx-app-1`, manual): crear *Proxy Host* del `DOMAIN` → `mprepuestos_odoo:8069`, **SSL Let's Encrypt**, y **Websockets Support** (websocket a `:8072`). *(pendiente: requiere `DOMAIN` + DNS)*
 
-### 1.4 `docker/odoo.conf`
-- [ ] `admin_passwd` fuerte.
-- [ ] `db_host = db`.
-- [ ] `addons_path` con **todos** los repos de la sección 7 del plan.
-- [ ] `workers` (con 1 caja: **2–3 + 1 gevent** alcanza).
-- [ ] `proxy_mode = True`.
-- [ ] `list_db = False` (en producción).
-- [ ] Límites de memoria/tiempo (`limit_memory_hard`, `limit_time_cpu`, `limit_time_real`).
+### 1.4 `docker/odoo.conf` (template; los secretos los inyecta el bootstrap con `envsubst`)
+- [x] `admin_passwd` fuerte (master, vía `${ODOO_MASTER_PASSWD}`) — **distinto** del login `admin`.
+- [x] `db_host = db`; `dbfilter = ^mprepuestos$`.
+- [x] `addons_path` con los 5 repos (`external/…`) + `custom/`.
+- [x] `workers = 3` + `max_cron_threads = 1`.
+- [x] `proxy_mode = True`; `gevent_port = 8072` (no el `longpolling_port` deprecado).
+- [x] `list_db = False`.
+- [x] Límites `limit_memory_soft/hard`, `limit_time_cpu/real`.
 
-### 1.5 Backups automáticos (`scripts/`)
-- [ ] `backup.sh`: **`pg_dump`** del contenedor `db` + copia del **volumen filestore**.
-- [ ] Envío a **almacenamiento externo** (otra región) con política de **retención**.
-- [ ] Orquestar con cron (host o contenedor dedicado).
-- [ ] `restore-test.sh`: **prueba periódica de restore** documentada y ejecutada al menos una vez.
+### 1.5 Usuario admin + bootstrap
+- [x] `entrypoint-bootstrap.sh` idempotente: init `base` sin demo en primer arranque + fija `admin`/`admin` vía `odoo shell` (hash correcto). En arranques sucesivos no repisa.
+- [x] **Login `admin` / `admin` verificado** (`/web/session/authenticate` → `uid=2`).
 
-**✅ DoD Fase 1:** `docker compose up` levanta db + odoo conectados a la **red del NPM existente** (sin publicar 8069 al host); el NPM enruta el dominio del cliente a `odoo:8069` con **SSL Let's Encrypt** y websocket OK; Odoo accesible por HTTPS; el contenedor odoo importa `M2Crypto` y `pyafipws`; backup corre y un restore de prueba funciona.
+### 1.6 Backups (`scripts/`)
+- [x] `backup.sh`: `pg_dump -Fc` del contenedor `db` + `tar` del filestore, con retención.
+- [x] `restore-test.sh`: ejecutado OK (restauró el dump en base efímera, `res_users` válido, y la borró).
+- [ ] Envío a **almacenamiento externo** (otra región). *(hook `rclone` dejado como TODO en `backup.sh`)*
+- [ ] Orquestar con **cron** del host (backup diario + restore-test semanal). *(documentado, no instalado)*
+
+**✅ DoD Fase 1 — CUMPLIDO:** `docker compose -p mprepuestos up -d` levanta `db` + `odoo` en `nginx_default` sin publicar puertos; `import M2Crypto, pyafipws` OK; `wkhtmltopdf` parcheado OK; Odoo responde HTTP 200 en `/web/login`; login `admin`/`admin` OK; los 5 repos disponibles en `addons_path`; backup + restore-test OK.
+> **Pendiente operativo (no bloquea la fase):** DNS + Proxy Host en el NPM para exponer por HTTPS, hardening del server, y cron de backups.
+
+> ⚠️ **Hallazgo crítico para Fase 2/4 (riesgo §7.4 confirmado):** en el branch `19.0` de ADHOC, los módulos de **facturación electrónica** `l10n_ar_afipws`, `l10n_ar_afipws_fe`, `l10n_ar_pos_afipws_fe` y `l10n_ar_reports` están marcados **`installable = False`** (versiones de manifest 18.0.x/16.0.x). **NO es un problema de dependencias** (todas las libs Python importan bien) — ADHOC todavía no certificó el stack FE para 19. Los módulos de soporte **sí** están listos en 19 (`l10n_ar` core, `l10n_ar_ux` 19.0.1.9.0, `account_payment_pro` 19.0.2.6.0, `account_internal_transfer` 19.0.1.3.0, `report_xlsx` 19.0.1.0.2). → **La FE desde PoS (objetivo central) requiere esperar el port de ADHOC o que Renzo lo forward-portee** (setear `installable=True` + resolver breaks de API 18→19). Decidir en Fase 2/4.
 
 ---
 
@@ -142,12 +147,12 @@ mp_repuestos_odoo/
 ### 2.1 Instalación de módulos `→ Plan §7.1`
 Verificar la **cadena de dependencias** (manifests) `→ Plan §7.1`:
 - [ ] **odoo/odoo (CE):** `l10n_ar`, `point_of_sale`, `stock`, `account`, `account_debit_note`.
-- [ ] **ingadhoc/odoo-argentina-ce:** `l10n_ar_afipws`, `l10n_ar_afipws_fe`, `l10n_ar_pos_afipws_fe`, `l10n_ar_reports`.
-- [ ] **ingadhoc/odoo-argentina:** `l10n_ar_ux` (+ `l10n_ar_tax` solo si se necesitan retenciones).
-- [ ] **ingadhoc/account-payment:** `account_payment_group`, `account_internal_transfer`.
-- [ ] **ingadhoc/account-financial-tools:** dependencias base ADHOC.
-- [ ] **OCA/reporting-engine:** `report_xlsx`.
-- [ ] ⚠️ **Caveat de versión** `→ Plan §7.4`: registrar la `version` de manifest de cada `l10n_ar_afipws*` (todavía `18.0.x`). Dejar nota: **NO confiar en producción hasta validar homologación**. Tener listo "Plan B": Renzo parchea si algún módulo falla en 19.
+- [ ] **ingadhoc/odoo-argentina-ce:** `l10n_ar_afipws`, `l10n_ar_afipws_fe`, `l10n_ar_pos_afipws_fe`, `l10n_ar_reports`. ⚠️ **Los 4 están `installable = False` en 19.0** — ver bloqueante abajo.
+- [ ] **ingadhoc/odoo-argentina:** `l10n_ar_ux` (19.0.1.9.0 ✅) (+ `l10n_ar_tax` solo si se necesitan retenciones).
+- [ ] **ingadhoc/account-payment:** `account_payment_pro` (19.0.2.6.0 ✅). ⚠️ **Corrección al plan:** en 19.0 NO existe `account_payment_group` (fue reemplazado por `account_payment_pro`).
+- [ ] **ingadhoc/account-financial-tools:** `account_internal_transfer` (19.0.1.3.0 ✅). ⚠️ **Corrección al plan:** este módulo vive acá, **no** en `account-payment`.
+- [ ] **OCA/reporting-engine:** `report_xlsx` (19.0.1.0.2 ✅).
+- [ ] 🛑 **BLOQUEANTE de versión** `→ Plan §7.4` (confirmado en Fase 1): `l10n_ar_afipws`, `l10n_ar_afipws_fe`, `l10n_ar_pos_afipws_fe` (manifest 18.0.x) y `l10n_ar_reports` (16.0.x) están **`installable = False`** en el branch 19.0 de ADHOC. **No instalables tal cual.** Opciones: (a) esperar a que ADHOC complete el port a 19; (b) Renzo forward-portea (set `installable=True` + resolver breaks de API/OWL 18→19) y valida en homologación. **Decidir antes de Fase 4** (la FE desde PoS depende de estos módulos).
 
 ### 2.2 Configuración contable RI `→ Plan §4, §9`
 - [ ] Compañía **MPRepuestosPDV**: país Argentina, moneda **ARS**, condición **Responsable Inscripto**.

@@ -1,0 +1,11 @@
+# Dependencias Python para Odoo 19 CE + facturación electrónica ARCA (ADHOC).
+# Las 5 primeras provienen de ingadhoc/odoo-argentina-ce@19.0/requirements.txt.
+# M2Crypto compila contra OpenSSL → ver deps de sistema en el Dockerfile.
+pyOpenSSL
+M2Crypto
+httplib2>=0.7
+pysimplesoap~=1.8.22
+git+https://github.com/filoquin/pyafipws.git@py3k
+# report_xlsx (OCA/reporting-engine), dependencia de l10n_ar_reports (Libro IVA):
+xlrd
+xlsxwriter

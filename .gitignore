@@ -1,0 +1,18 @@
+# Entorno / secretos
+docker/.env
+*.env
+!docker/.env.example
+
+# Certificados ARCA (Fase 4) — nunca commitear claves
+*.crt
+*.key
+*.pem
+
+# Backups locales
+backups/
+*.dump
+*.sql
+*.tar.gz
+
+# Sistema
+.DS_Store

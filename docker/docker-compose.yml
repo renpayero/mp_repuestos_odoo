@@ -1,0 +1,70 @@
+name: mprepuestos
+
+services:
+  db:
+    image: postgres:16
+    container_name: mprepuestos_db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks:
+      - internal
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  odoo:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mprepuestos/odoo:${TAG}
+    container_name: mprepuestos_odoo
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Conexión a la base (convención de la imagen oficial + uso por psql en el bootstrap)
+      HOST: db
+      PORT: 5432
+      USER: ${POSTGRES_USER}
+      PASSWORD: ${POSTGRES_PASSWORD}
+      # Variables para envsubst del odoo.conf y para el bootstrap
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: ${DB_NAME}
+      ODOO_MASTER_PASSWD: ${ODOO_MASTER_PASSWD}
+      ADMIN_LOGIN: ${ADMIN_LOGIN}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+    volumes:
+      - odoo-filestore:/var/lib/odoo
+      - ./odoo.conf:/etc/odoo/odoo.conf.template:ro
+      - ../addons:/mnt/extra-addons:ro
+      - ./entrypoint-bootstrap.sh:/entrypoint-bootstrap.sh:ro
+    entrypoint: ["/entrypoint-bootstrap.sh"]
+    # Sin `ports:` — el NPM rutea por nombre de contenedor sobre la red `proxy`.
+    expose:
+      - "8069"
+      - "8072"
+    networks:
+      - internal
+      - proxy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  odoo-filestore:
+
+networks:
+  # Red privada db <-> odoo (la base nunca toca la red del proxy)
+  internal:
+    driver: bridge
+  # Red EXISTENTE del NGINX Proxy Manager (nginx_default). Debe existir ya.
+  proxy:
+    external: true
+    name: ${NPM_NETWORK}
