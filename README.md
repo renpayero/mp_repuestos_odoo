@@ -82,11 +82,10 @@ Copiados de `renzo_odoo` a `addons/custom/` e instalados:
 ## 🟨 Transversal — Hardening / Backups / DNS-SSL
 
 ### Acceso y red
-- [x] Puertos publicados al host para acceso directo (`HTTP_PORT=8069`, `GEVENT_PORT=8072`)
 - [x] DNS: `mp.dakodev.com` → A → `72.60.156.201` (IP pública del VPS)
-- [ ] NGINX Proxy Manager: Proxy Host `mp.dakodev.com` → `mprepuestos_odoo:8069` (Websockets ON, `/websocket` → `:8072`)
-- [ ] SSL Let's Encrypt emitido + Force SSL
-- [ ] Cerrar puerto 8069 público una vez validado el HTTPS
+- [x] NGINX Proxy Manager: Proxy Host `mp.dakodev.com` → `mprepuestos_odoo:8069` (Websockets ON, `/websocket` → `:8072`)
+- [x] SSL Let's Encrypt emitido + Force SSL (HTTPS `200` verificado)
+- [x] Puerto 8069 público **cerrado** tras validar HTTPS (acceso solo vía NPM)
 
 ### Seguridad / operación
 - [ ] Cambiar contraseña de `admin` (hoy admin/admin)
