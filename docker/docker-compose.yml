@@ -51,6 +51,10 @@ services:
     expose:
       - "8069"
       - "8072"
+    ports:
+      # Acceso directo por IP:puerto (además del ruteo por nombre vía NPM).
+      - "${HTTP_PORT:-8069}:8069"      # interfaz web / JSON-RPC
+      - "${GEVENT_PORT:-8072}:8072"    # websocket (bus / live)
     networks:
       - internal
       - proxy
