@@ -86,6 +86,7 @@ Copiados de `renzo_odoo` a `addons/custom/` e instalados:
 - [x] NGINX Proxy Manager: Proxy Host `mp.dakodev.com` → `mprepuestos_odoo:8069` (Websockets ON, `/websocket` → `:8072`)
 - [x] SSL Let's Encrypt emitido + Force SSL (HTTPS `200` verificado)
 - [x] Puerto 8069 público **cerrado** tras validar HTTPS (acceso solo vía NPM)
+- [x] WebSocket del bus en tiempo real: `location /websocket` → `mprepuestos_odoo:8072` en el NPM (handshake `101` verificado; sin esto Odoo muestra el marco amarillo "conexión perdida")
 
 ### Seguridad / operación
 - [ ] Cambiar contraseña de `admin` (hoy admin/admin)
