@@ -10,7 +10,7 @@
 |------|-------------|--------|
 | 0 | Resguardo del origen (export SaaS) | ✅ |
 | 1 | VPS + Infraestructura Docker | ✅ |
-| 2 | Localización AR + módulos base | 🟨 |
+| 2 | Localización AR + módulos base | ✅ |
 | 3 | Migración de datos maestros | ⬜ |
 | 4 | Facturación electrónica ARCA (PoS) | ⬜ |
 | 5 | Operación asistida / paralelo | ⬜ |
@@ -41,14 +41,25 @@
 
 ---
 
-## 🟨 Fase 2 — Localización AR + módulos base
+## ✅ Fase 2 — Localización AR + módulos base
 
-- [ ] Instalar `l10n_ar` (plan de cuentas RI) + `l10n_ar_ux`
-- [ ] Instalar `account_payment_pro`, `account_internal_transfer` (account-financial-tools)
-- [ ] Configurar compañía: razón social, CUIT, domicilio, RI
-- [ ] `report_xlsx` (reporting-engine) para exportaciones
-- [ ] ⚠️ FE (`l10n_ar_afipws*`) están `installable=False` en 19.0 → ver Fase 4
+### Localización argentina (ADHOC + oficial)
+- [x] Instalado `l10n_ar` (oficial CE) + `l10n_ar_ux`, `l10n_ar_tax`, `l10n_ar_bank`, `l10n_ar_purchase(_stock)` (ADHOC 19.0)
+- [x] Instalado `l10n_ar_withholding` (retenciones), `account_payment_pro`, `account_internal_transfer`, `account_ux`, `account_background_post`, `l10n_latam_check`
+- [x] Configurada compañía: razón social, CUIT (tipo ident. CUIT), domicilio, **Responsable Inscripto**
+- [x] **Plan de cuentas `ar_ri`** cargado (313 cuentas, 155 impuestos, 9 diarios, 4 posiciones fiscales); país fiscal = AR
+- [x] IVA Ventas/Compras por defecto = 21%; diarios de venta/compra revisados
+- [x] `report_xlsx` (reporting-engine) para exportaciones
 - [x] Idioma es_AR por defecto (cargado y activo; usuarios + compañía + default de nuevos partners)
+- [ ] ⚠️ FE (`l10n_ar_afipws*`) `installable=False` en 19.0 (ADHOC no liberó el port) → ver Fase 4
+
+### Stack contable Community (OCA — repone lo que falta de Enterprise)
+CE no trae la app "Contabilidad" (`account_accountant`, EE); solo "Facturación" (`account`). Complementado con OCA:
+
+- [x] `account_financial_report` (Libro Mayor, Balance Sumas y Saldos, Aged Partner, Open Items, Journal Ledger, IVA)
+- [x] `account_tax_balance` + `partner_statement` (apoyo IVA + extractos de cuenta)
+- [x] `account_reconcile_oca` (+ `account_statement_base`) — conciliación bancaria estilo Enterprise
+- [x] `mis_builder` (+ `date_range`) — Balance General / Estado de Resultados configurables
 
 ### Módulos de experiencia de usuario (UX)
 Copiados de `renzo_odoo` a `addons/custom/` e instalados:
@@ -100,7 +111,9 @@ Copiados de `renzo_odoo` a `addons/custom/` e instalados:
 
 - **Odoo 19 Community** (imagen oficial `odoo:19`, personalizada en `docker/Dockerfile`)
 - **PostgreSQL 16** en contenedor con volumen persistente
-- **Localización AR (ADHOC + OCA)** como submódulos git pineados en `addons/external/`
+- **Localización AR:** ADHOC `odoo-argentina` + `odoo-argentina-ce` (FE pendiente de port) + `l10n_ar` oficial
+- **Contabilidad CE = `account` + OCA:** `account-financial-reporting`, `account-reconcile`, `mis-builder`, `server-ux`
+- **Submódulos git pineados** en `addons/external/` (también `account-payment`, `account-financial-tools`, `account-invoicing`, `reporting-engine`)
 - **Reverse proxy:** NGINX Proxy Manager existente (`nginx-app-1`, red `nginx_default`)
 - **Dominio:** `mp.dakodev.com` · **VPS:** `72.60.156.201`
 - **Secretos:** `docker/.env` (gitignored); plantilla en `docker/.env.example`
