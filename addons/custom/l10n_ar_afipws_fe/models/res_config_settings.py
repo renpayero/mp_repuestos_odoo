@@ -1,0 +1,26 @@
+##############################################################################
+# For copyright and license notices, see __manifest__.py file in module root
+# directory
+##############################################################################
+from odoo import fields, models
+
+
+class ResConfigSettings(models.TransientModel):
+    _inherit = "res.config.settings"
+
+    l10n_ar_afip_fce_transmission = fields.Selection(
+        [
+            ("SCA", "SCA - TRANSFERENCIA AL SISTEMA DE CIRCULACION ABIERTA"),
+            ("ADC", "ADC - AGENTE DE DEPOSITO COLECTIVO"),
+        ],
+        "FCE: Opción de Transmisión",
+        help="Este campo sera necesario cuando informes comprobantes del tipo FCE MiPyME",
+        config_parameter="l10n_ar_afipws_fe.fce_transmission",
+    )
+
+    # v19: en un campo related, el atributo `selection` se ignora (se hereda del
+    # campo relacionado en res.company). Se quita para evitar el warning.
+    l10n_ar_payment_foreign_currency = fields.Selection(
+        related="company_id.l10n_ar_payment_foreign_currency",
+        readonly=False,
+    )

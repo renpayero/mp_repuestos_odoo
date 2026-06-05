@@ -5,7 +5,9 @@ pyOpenSSL
 M2Crypto
 httplib2>=0.7
 pysimplesoap~=1.8.22
-git+https://github.com/filoquin/pyafipws.git@py3k
+# pyafipws pineado a commit fijo (no a la rama) para evitar cambios silenciosos del WSDL/API
+# de ARCA al rebuildar la imagen. Rama py3k del fork filoquin (compatible con Python 3.12).
+git+https://github.com/filoquin/pyafipws.git@0bb5988b31f066ca1906156183a3a0888643c314
 # report_xlsx (OCA/reporting-engine), dependencia de l10n_ar_reports (Libro IVA):
 xlrd
 xlsxwriter

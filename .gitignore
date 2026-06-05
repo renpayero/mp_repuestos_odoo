@@ -14,5 +14,9 @@ backups/
 *.sql
 *.tar.gz
 
+# Python
+__pycache__/
+*.pyc
+
 # Sistema
 .DS_Store
