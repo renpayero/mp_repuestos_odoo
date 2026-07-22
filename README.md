@@ -14,6 +14,18 @@
 
 ---
 
+## 🚀 Puesta en marcha del clone
+
+Este repo usa **submódulos git** en `addons/external/`. Un `git clone` común los deja como **carpetas vacías**, así que después de clonar:
+
+```bash
+git submodule update --init --recursive
+```
+
+Verificá con `git submodule status`: las líneas **no deben empezar con `-`** (sin inicializar) **ni con `+`** (checkouteado fuera del SHA pineado). Los pines esperados están en [`docs/CONTEXTO.md`](docs/CONTEXTO.md) §6.
+
+---
+
 ## 📊 Estado por fase
 
 | Fase | Descripción | Estado |

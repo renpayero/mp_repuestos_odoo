@@ -179,6 +179,26 @@ docs/              ← CONTEXTO.md + ARCA-FACTURA-ELECTRONICA.md
 
 **Nunca parchees `addons/external/`**: son submódulos; los cambios se pierden en el próximo `git pull`. Si hay que tocar un módulo de terceros, **vendorizalo a `addons/custom/`** y quitá el repo original del `addons_path` para evitar colisión de nombres en el registry.
 
+### ⚠️ Después de clonar: inicializá los submódulos
+
+Un `git clone` común deja las carpetas de `addons/external/` **vacías**. Si las ves vacías:
+
+```bash
+git submodule update --init --recursive
+```
+
+Para verificar que quedaron bien, `git submodule status` no debe mostrar prefijos:
+
+| Prefijo | Significa |
+|---|---|
+| *(espacio)* | ✅ en el SHA pineado — correcto |
+| `-` | ❌ **sin inicializar** (carpeta vacía) → correr el comando de arriba |
+| `+` | ⚠️ **checkouteado en otro commit** que el pineado → `git submodule update --recursive` para volver al pin |
+
+Los SHAs esperados están en [`docs/CONTEXTO.md`](docs/CONTEXTO.md) §6.
+
+> 💡 **No te alarmes si ves `+` mientras el comando corre.** Git clona los 10 repos **primero** y recién al final los posiciona en el SHA pineado, así que a mitad de camino aparecen en la rama por defecto del remoto (algunos siguen en `18.0`). Mirá el estado **después** de que termine.
+
 ---
 
 ## 🔐 Seguridad
