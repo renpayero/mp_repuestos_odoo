@@ -2,6 +2,16 @@
 
 > Hoja de ruta ejecutable. Cuando **todos los checkbox estén marcados**, la migración del plan (`plan-migracion-mprepuestos-odoo19.md`) está completa.
 
+## 📚 Documentación
+
+| Documento | Para qué |
+|---|---|
+| **[`CLAUDE.md`](CLAUDE.md)** | Reglas de trabajo, infra, comandos, gotchas. **Claude Code lo carga solo.** |
+| **[`docs/CONTEXTO.md`](docs/CONTEXTO.md)** | Estado completo: decisiones, forward-port, errores resueltos, deuda pendiente |
+| **[`docs/ARCA-FACTURA-ELECTRONICA.md`](docs/ARCA-FACTURA-ELECTRONICA.md)** | Guía operativa de ARCA: certificados, puntos de venta, diarios, errores |
+
+**Si venís a retomar el proyecto, leé esos tres en ese orden.**
+
 ---
 
 ## 📊 Estado por fase
@@ -12,7 +22,7 @@
 | 1 | VPS + Infraestructura Docker | ✅ |
 | 2 | Localización AR + módulos base | ✅ |
 | 3 | Migración de datos maestros | ⬜ |
-| 4 | Facturación electrónica ARCA (PoS) | ⬜ |
+| 4 | Facturación electrónica ARCA (PoS) | 🔄 |
 | 5 | Operación asistida / paralelo | ⬜ |
 | 6 | Go-live + corte | ⬜ |
 | - | Hardening / backups / DNS-SSL (transversal) | 🟨 |
@@ -51,7 +61,7 @@
 - [x] IVA Ventas/Compras por defecto = 21%; diarios de venta/compra revisados
 - [x] `report_xlsx` (reporting-engine) para exportaciones
 - [x] Idioma es_AR por defecto (cargado y activo; usuarios + compañía + default de nuevos partners)
-- [ ] ⚠️ FE (`l10n_ar_afipws*`) `installable=False` en 19.0 (ADHOC no liberó el port) → ver Fase 4
+- [x] ⚠️ FE (`l10n_ar_afipws*`) venía `installable=False` en 19.0 (ADHOC no liberó el port) → **resuelto con forward-port propio**, ver Fase 4
 
 ### Stack contable Community (OCA — repone lo que falta de Enterprise)
 CE no trae la app "Contabilidad" (`account_accountant`, EE); solo "Facturación" (`account`). Complementado con OCA:
@@ -79,12 +89,24 @@ Copiados de `renzo_odoo` a `addons/custom/` e instalados:
 
 ---
 
-## ⬜ Fase 4 — Facturación electrónica ARCA (PoS)
+## 🔄 Fase 4 — Facturación electrónica ARCA (PoS)
 
-- [ ] Resolver bloqueo de módulos FE (port a 19.0 o forward-port propio)
-- [ ] Certificado ARCA (CSR + clave privada) y CUIT homologación
-- [ ] Configurar punto de venta + diarios (ARCA vs interno)
-- [ ] Pruebas en homologación (WSFEv1): FA/FB/NC
+> Guía detallada: **[`docs/ARCA-FACTURA-ELECTRONICA.md`](docs/ARCA-FACTURA-ELECTRONICA.md)**
+
+### Forward-port de los módulos (ADHOC 18 → 19)
+- [x] Etapa 0 — Vendorizar los 3 módulos FE a `addons/custom/`, sacar `odoo-argentina-ce` del `addons_path`
+- [x] Etapa A — `l10n_ar_afipws` instalable y funcionando (`19.0.1.0.0`)
+- [x] Etapa B — `l10n_ar_afipws_fe` instalable y funcionando (`19.0.2.0.0`); backend validado en runtime
+- [ ] Etapa C — `l10n_ar_pos_afipws_fe` + frontend OWL nuevo (ticket con CAE/vencimiento/QR)
+- [ ] Etapa D — Tests + manejo robusto de excepciones
+
+### Trámites y configuración
+- [x] Alias de certificado creado en Odoo + CSR generado
+- [ ] **Alta de punto de venta en ARCA** (sistema *RECE para aplicativo y Web Services*) ← acá estamos
+- [ ] Subir CSR al portal, bajar el `.crt`, autorizarlo al WS `wsfe`
+- [ ] Cargar el `.crt` en Odoo
+- [ ] Crear diario con el punto de venta y probar conexión
+- [ ] Pruebas en homologación (WSFEv1): FA / FB / NC / exento / percepciones / moneda extranjera
 - [ ] Pasaje a producción ARCA
 - [ ] Capacitación caja / operador PoS
 
@@ -100,8 +122,11 @@ Copiados de `renzo_odoo` a `addons/custom/` e instalados:
 - [x] WebSocket del bus en tiempo real: `location /websocket` → `mprepuestos_odoo:8072` en el NPM (handshake `101` verificado; sin esto Odoo muestra el marco amarillo "conexión perdida")
 
 ### Seguridad / operación
-- [ ] Cambiar contraseña de `admin` (hoy admin/admin)
-- [ ] Hardening del server (firewall, SSH)
+- [ ] 🚨 Cambiar contraseña de `admin` de Odoo
+- [ ] 🚨 SSH: pasar a clave pública (`PasswordAuthentication no`, `PermitRootLogin prohibit-password`)
+- [ ] 🚨 Rotar la contraseña de `root` del VPS
+- [ ] Activar `ufw` (22/80/443) + instalar `fail2ban`
+- [ ] Persistir el bloque `/websocket` en la pestaña **Advanced** del Proxy Host del NPM
 - [ ] Cron de backups (`backup.sh` diario + `restore-test.sh` semanal)
 - [ ] Backup off-site (rclone a otro destino)
 

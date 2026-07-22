@@ -7,11 +7,24 @@
             <field name="inherit_id" ref="account.res_config_settings_view_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//block[@id='invoicing_settings']" position="inside">
-                    <setting type="header" string="AFIP WS" help="Configure AFIP web services">
-                        <button class="btn-link" icon="fa-arrow-right" name="%(l10n_ar_afipws.act_afipws_certificate_alias)d" string="List certificates" type="action"/>
-                        <button class="btn-link" icon="fa-arrow-right" name="%(l10n_ar_afipws.act_afipws_auth)d" string="List conections" type="action"/>
-                        <label for="afip_ws_env_type"/>
-                        <field class="font-weight-bold" name="afip_ws_env_type"/>
+                    <setting id="afip_ws_settings" string="AFIP / ARCA Web Services"
+                             help="Entorno y certificados para la facturación electrónica de Argentina">
+                        <div class="content-group">
+                            <div class="row mt16">
+                                <label for="afip_ws_env_type" string="Entorno" class="col-lg-3 o_light_label"/>
+                                <field name="afip_ws_env_type"/>
+                            </div>
+                            <div class="mt8">
+                                <button class="btn-link" icon="fa-arrow-right"
+                                        name="%(l10n_ar_afipws.act_afipws_certificate_alias)d"
+                                        string="Certificados" type="action"/>
+                            </div>
+                            <div>
+                                <button class="btn-link" icon="fa-arrow-right"
+                                        name="%(l10n_ar_afipws.act_afipws_auth)d"
+                                        string="Conexiones" type="action"/>
+                            </div>
+                        </div>
                     </setting>
                 </xpath>
             </field>
