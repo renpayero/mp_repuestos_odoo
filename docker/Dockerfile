@@ -28,3 +28,17 @@ RUN pip3 install --no-cache-dir --break-system-packages -r /tmp/requirements.txt
 RUN mkdir -p /etc/odoo && chown odoo /etc/odoo
 
 USER odoo
+
+# Seguridad (23/11/2026), CVE-2026-130029: XSS en el sanitizador de HTML de Odoo.
+# 1) Arreglo de Odoo del 16/11/2026 en odoo/tools/mail.py (commit 8196ff1a73f9 de la rama 19.0).
+# 2) lxml 5.2.1 de pip, que trae libxml2 2.12 (la del sistema es 2.9.14): es la mitigacion que da el
+#    aviso (libxml2 >= 2.10). Queda en /usr/local, que tiene prioridad sobre el lxml de apt.
+# Si algo no queda aplicado, el build falla. Sobra cuando la base oficial traiga el arreglo.
+USER root
+COPY cve/ /tmp/cve/
+RUN patch -p1 --forward --no-backup-if-mismatch -d /usr/lib/python3/dist-packages < /tmp/cve/odoo19-mail-20261116.patch \
+ && grep -qF 'serialized = serialized.replace' /usr/lib/python3/dist-packages/odoo/tools/mail.py \
+ && pip3 install --no-cache-dir --break-system-packages --ignore-installed --no-deps lxml==5.2.1 \
+ && python3 -c "import sys, lxml.etree as e; v = e.LIBXML_VERSION; print('libxml2', v); sys.exit(0 if v >= (2, 10, 0) else 'libxml2 < 2.10')" \
+ && rm -rf /tmp/cve
+USER odoo
